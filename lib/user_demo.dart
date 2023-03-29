@@ -12,6 +12,19 @@ class UserDemo extends StatefulWidget {
 }
 
 class _UserDemoState extends State<UserDemo> {
+  List name = ["janki", "kajal", "nenu"];
+
+  final _formKey = GlobalKey<FormState>();
+  RegExp passValid = RegExp(r"(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)");
+  bool validatePassword(String pass) {
+    String password = pass.trim();
+    if (passValid.hasMatch(password)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   DatabaseHelper? dbHelper;
   final nameController = TextEditingController();
   final ageController = TextEditingController();
@@ -31,51 +44,107 @@ class _UserDemoState extends State<UserDemo> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          // title: Text(widget.title),
-          title: const Text(" demp"),
-        ),
-        body: Column(
-          children: <Widget>[
-            Expanded(
-                child: Column(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        // title: Text(widget.title),
+        title: const Text(" demo"),
+      ),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: Column(
               children: [
                 Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Form(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(hintText: 'Enter your name', labelText: 'Name'),
-                      ),
-                      TextFormField(
-                        controller: ageController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                        ],
-                        decoration: const InputDecoration(hintText: 'Enter your age', labelText: 'Age'),
-                      ),
-                      TextFormField(
-                        controller: emailController,
-                        decoration: const InputDecoration(hintText: 'Enter your email', labelText: 'Email'),
-                      ),
-                      Container(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(hintText: 'Enter your name', labelText: 'Name'),
+                        ),
+                        TextFormField(
+                          controller: ageController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                          ],
+                          decoration: const InputDecoration(hintText: 'Enter your age', labelText: 'Age'),
+                        ),
+                        TextFormField(
+                          controller: emailController,
+                          decoration: const InputDecoration(hintText: 'Enter your email', labelText: 'Email'),
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
+                              return 'Please enter a valid email address';
+                            }
+                            return null;
+                          },
+                        ),
+                        Container(
                           margin: const EdgeInsets.symmetric(vertical: 10),
                           child: ElevatedButton(
                             child: const Text('Submit'),
-                            onPressed: addOrEditUser,
-                          ))
-                    ]))),
+                            onPressed: () async {
+                              var isExistEmail = await dbHelper!.checkEmailExist(emailController.text);
+                              // debugPrint("check-------------->>>${dbHelper!.checkEmailExist(emailController.text)}");
+
+                              if (isExistEmail == true) {
+                                debugPrint("Already exists user -------------->>>$isExistEmail");
+
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return const AlertDialog(
+                                      content: Text("A record with that name already exists."),
+                                    );
+                                  },
+                                );
+                              } else {
+                                addOrEditUser();
+                              }
+
+                              // if (_formKey.currentState!.validate()) {
+                              //   showDialog(
+                              //     context: context,
+                              //     builder: (BuildContext context) {
+                              //       return const AlertDialog(
+                              //         title: Text("Success"),
+                              //         content: Text("Saved successfully"),
+                              //       );
+                              //     },
+                              //   );
+                              // } else {
+                              //   showDialog(
+                              //       context: context,
+                              //       builder: (BuildContext context) {
+                              //         return const AlertDialog(
+                              //           content: Text("your email is invalid"),
+                              //         );
+                              //       });
+                              // }
+                            },
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
                 Expanded(
                   flex: 1,
                   child: SafeArea(child: userWidget()),
                 )
               ],
-            )),
-          ],
-        ));
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> addOrEditUser() async {
@@ -96,7 +165,7 @@ class _UserDemoState extends State<UserDemo> {
     setState(() {});
   }
 
-  Future<int> addUser(User user) async {
+  Future<void> addUser(User user) async {
     return await dbHelper!.insertUser(user);
     debugPrint("user------>>$user");
   }
@@ -175,7 +244,10 @@ class _UserDemoState extends State<UserDemo> {
                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: <Widget>[
                                     Container(
-                                      decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(100)),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black26,
+                                        borderRadius: BorderRadius.circular(100),
+                                      ),
                                       child: Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Text(

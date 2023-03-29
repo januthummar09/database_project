@@ -18,27 +18,36 @@ class DatabaseHelper {
     String path = await getDatabasesPath();
     debugPrint("path---->$path");
     db = await openDatabase(
-      join(path, 'person.db'),
+      join(path, 'stu.db'),
       onCreate: (database, version) async {
         await database.execute(
           """
             CREATE TABLE demo (
               id INTEGER PRIMARY KEY AUTOINCREMENT, 
-              name TEXT NOT NULL,
+              name TEXT NOT NULL ,
               age INTEGER NOT NULL, 
-              email TEXT NOT NULL
+              email TEXT NOT NULL UNIQUE
+              
             )
           """,
         );
+        debugPrint("table--------------->>$db");
+        debugPrint("table--------------created");
       },
       version: 1,
     );
   }
 
-  Future<int> insertUser(User user) async {
+  Future<void> insertUser(User user) async {
     int result = await db!.insert('demo', user.toMap());
-    return result;
+    result;
+    debugPrint("reult----------------->>$result");
   }
+
+  // Future<int> insertUser(User user) async {
+  //   int result = await db!.insert('demo', user.toMap());
+  //    return   result;
+  // }
 
   Future<int> updateUser(User user) async {
     int result = await db!.update(
@@ -52,7 +61,27 @@ class DatabaseHelper {
 
   Future<List<User>> retrieveUsers() async {
     final List<Map<String, Object?>> queryResult = await db!.query('demo');
+    debugPrint("queryResult----------------->>$queryResult");
+
     return queryResult.map((e) => User.fromMap(e)).toList();
+  }
+
+  Future<bool> checkEmailExist(String email) async {
+    final List<Map<String, Object?>> queryResult = await db!.query('demo');
+    // debugPrint("queryResult----------------->>$queryResult");
+
+    for (var items in queryResult) {
+      // debugPrint("Loop----------------->>$items");
+      // debugPrint("------------------->>${items['email'].toString()}");
+      if (items['email'].toString() == email) {
+        debugPrint("true email  ------------------------>>${items['email'].toString()}");
+        // return Future.value(true);
+        return true;
+      }
+    }
+
+    // return Future.value(false);
+    return false;
   }
 
   Future<void> deleteUser(int id) async {
@@ -61,5 +90,7 @@ class DatabaseHelper {
       where: "id = ?",
       whereArgs: [id],
     );
+
+    debugPrint("delete----------------->>${db!.delete}");
   }
 }
